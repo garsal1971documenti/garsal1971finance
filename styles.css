@@ -189,6 +189,42 @@ h2 {
   margin-bottom: 18px;
 }
 
+.auth-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 18px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow);
+}
+
+.auth-copy {
+  max-width: 720px;
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.auth-form {
+  display: grid;
+  grid-template-columns: 190px 160px auto auto;
+  gap: 10px;
+}
+
+.auth-form input {
+  min-height: 42px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0 12px;
+}
+
+.hidden {
+  display: none;
+}
+
 .summary-card,
 .panel {
   border: 1px solid var(--line);
@@ -428,6 +464,11 @@ h2 {
   .content-grid,
   .bottom-grid {
     grid-template-columns: 1fr 1fr;
+  }
+
+  .auth-panel,
+  .auth-form {
+    grid-template-columns: 1fr;
   }
 
   .content-grid {
