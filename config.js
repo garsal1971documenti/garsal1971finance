@@ -1,4 +1,4 @@
 window.GARSAL_FINANCE_CONFIG = {
-  supabaseUrl: "",
-  supabaseAnonKey: ""
+  supabaseUrl: "https://qdkrlssrfgopitcvpqzh.supabase.co",
+  supabaseAnonKey: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFka3Jsc3NyZmdvcGl0Y3ZwcXpoIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzc5OTk3NzEsImV4cCI6MjA5MzU3NTc3MX0.RORwqk_hHN1iec68na9LFhBfkBT3pRSRoU_7NpTXnMU"
 };
