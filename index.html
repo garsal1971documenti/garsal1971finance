@@ -1,0 +1,170 @@
+<!doctype html>
+<html lang="it">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#0f766e">
+    <title>Garsal Finance</title>
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Navigazione principale">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true">GF</div>
+          <div>
+            <p class="brand-name">Garsal Finance</p>
+            <p class="brand-subtitle">Controllo personale</p>
+          </div>
+        </div>
+
+        <nav class="nav-list">
+          <a class="nav-item active" href="#dashboard">Dashboard</a>
+          <a class="nav-item" href="#movimenti">Movimenti</a>
+          <a class="nav-item" href="#budget">Budget</a>
+          <a class="nav-item" href="#obiettivi">Obiettivi</a>
+        </nav>
+      </aside>
+
+      <main class="main-content">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">Maggio 2026</p>
+            <h1>Panoramica finanziaria</h1>
+          </div>
+          <button class="primary-action" id="addTransactionButton" type="button">
+            + Movimento
+          </button>
+        </header>
+
+        <section class="summary-grid" aria-label="Riepilogo">
+          <article class="summary-card balance-card">
+            <p class="card-label">Saldo disponibile</p>
+            <strong id="currentBalance">&euro; 0,00</strong>
+            <span class="trend positive">+8,4% rispetto al mese scorso</span>
+          </article>
+          <article class="summary-card">
+            <p class="card-label">Entrate</p>
+            <strong id="incomeTotal">&euro; 0,00</strong>
+            <span class="trend positive">Stipendio e extra</span>
+          </article>
+          <article class="summary-card">
+            <p class="card-label">Uscite</p>
+            <strong id="expenseTotal">&euro; 0,00</strong>
+            <span class="trend warning">Da monitorare</span>
+          </article>
+          <article class="summary-card">
+            <p class="card-label">Risparmio</p>
+            <strong id="savingRate">0%</strong>
+            <span class="trend positive">Obiettivo 25%</span>
+          </article>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel movement-panel" id="movimenti">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Ultimi aggiornamenti</p>
+                <h2>Movimenti recenti</h2>
+              </div>
+              <button class="ghost-button" id="filterButton" type="button">Tutti</button>
+            </div>
+            <div class="transaction-list" id="transactionList"></div>
+          </article>
+
+          <article class="panel budget-panel" id="budget">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Categorie</p>
+                <h2>Budget mensile</h2>
+              </div>
+            </div>
+            <div class="budget-list" id="budgetList"></div>
+          </article>
+        </section>
+
+        <section class="bottom-grid">
+          <article class="panel">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Proiezione</p>
+                <h2>Andamento saldo</h2>
+              </div>
+            </div>
+            <div class="chart" aria-label="Grafico andamento saldo">
+              <span style="height: 42%"></span>
+              <span style="height: 55%"></span>
+              <span style="height: 48%"></span>
+              <span style="height: 67%"></span>
+              <span style="height: 72%"></span>
+              <span style="height: 84%"></span>
+            </div>
+          </article>
+
+          <article class="panel" id="obiettivi">
+            <div class="panel-header">
+              <div>
+                <p class="eyebrow">Priorit&agrave;</p>
+                <h2>Obiettivi</h2>
+              </div>
+            </div>
+            <div class="goal-list">
+              <div class="goal-item">
+                <div>
+                  <strong>Fondo emergenza</strong>
+                  <p>&euro; 3.200 di &euro; 5.000</p>
+                </div>
+                <span>64%</span>
+              </div>
+              <div class="goal-item">
+                <div>
+                  <strong>Vacanza estate</strong>
+                  <p>&euro; 850 di &euro; 1.400</p>
+                </div>
+                <span>61%</span>
+              </div>
+            </div>
+          </article>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="transaction-dialog" id="transactionDialog">
+      <form method="dialog" class="transaction-form" id="transactionForm">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Nuovo</p>
+            <h2>Movimento</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="Chiudi">&times;</button>
+        </div>
+
+        <label>
+          Descrizione
+          <input name="description" placeholder="Es. Spesa alimentare" required>
+        </label>
+        <label>
+          Categoria
+          <select name="category" required>
+            <option value="Casa">Casa</option>
+            <option value="Spesa">Spesa</option>
+            <option value="Trasporti">Trasporti</option>
+            <option value="Tempo libero">Tempo libero</option>
+            <option value="Entrate">Entrate</option>
+          </select>
+        </label>
+        <label>
+          Importo
+          <input name="amount" inputmode="decimal" placeholder="49.90" required>
+        </label>
+        <div class="form-actions">
+          <button class="ghost-button" value="cancel" type="submit">Annulla</button>
+          <button class="primary-action" value="default" type="submit">Aggiungi</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="app.js"></script>
+  </body>
+</html>

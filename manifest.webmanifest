@@ -1,0 +1,10 @@
+{
+  "name": "Garsal Finance",
+  "short_name": "Finance",
+  "description": "Webapp responsive per gestire finanza personale da desktop e smartphone.",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#f4f7f5",
+  "theme_color": "#0f766e",
+  "icons": []
+}
