@@ -27,6 +27,19 @@ const fallbackPortfolios = [
   }
 ];
 
+const importedPortfolioName = "Portafoglio principale";
+const importedPositions = [
+  { symbol: "LLY.US", name: "Eli Lilly and Company", purchase_date: "2026-05-06", quantity: 3, purchase_price: 988.87, current_price: 988.87, price_date: "2026-05-06" },
+  { symbol: "MSFT.US", name: "Microsoft", purchase_date: "2026-05-06", quantity: 10, purchase_price: 411.38, current_price: 411.38, price_date: "2026-05-06" },
+  { symbol: "GOOGL.US", name: "Alphabet Inc.", purchase_date: "2026-05-06", quantity: 520, purchase_price: 388.43, current_price: 388.43, price_date: "2026-05-06" },
+  { symbol: "GOOG.US", name: "Alphabet Inc.", purchase_date: "2026-05-06", quantity: 520, purchase_price: 384.27, current_price: 384.27, price_date: "2026-05-06" },
+  { symbol: "AMZN.US", name: "Amazon", purchase_date: "2026-05-06", quantity: 300, purchase_price: 273.55, current_price: 273.55, price_date: "2026-05-06" },
+  { symbol: "INFU", name: "Amundi US Inflation Expectations", purchase_date: "2026-05-06", quantity: 15, purchase_price: 140.76, current_price: 140.76, price_date: "2026-05-06" },
+  { symbol: "CHIP", name: "Amundi MSCI Semiconductors UCITS ETF", purchase_date: "2026-05-06", quantity: 130, purchase_price: 99.28, current_price: 99.28, price_date: "2026-05-06" },
+  { symbol: "BSX.US", name: "Boston Scientific", purchase_date: "2026-05-06", quantity: 25, purchase_price: 55.98, current_price: 55.98, price_date: "2026-05-06" },
+  { symbol: "PYPL.US", name: "PayPal Holdings Inc", purchase_date: "2026-05-06", quantity: 35, purchase_price: 46.49, current_price: 46.49, price_date: "2026-05-06" }
+];
+
 const budgets = [
   { category: "Casa", used: 720, limit: 850 },
   { category: "Spesa", used: 286, limit: 420 },
@@ -48,6 +61,13 @@ const euro = new Intl.NumberFormat("it-IT", {
   style: "currency",
   currency: "EUR"
 });
+
+const usd = new Intl.NumberFormat("it-IT", {
+  style: "currency",
+  currency: "USD"
+});
+
+const fallbackUsdToEurRate = 0.853;
 
 const numberFormatter = new Intl.NumberFormat("it-IT", {
   maximumFractionDigits: 4
@@ -82,6 +102,22 @@ function parseAmount(value) {
   return Number.parseFloat(String(value).replace(",", "."));
 }
 
+function getPositionCurrency(position) {
+  if (position.symbol.endsWith(".US") || position.symbol === "INFU") {
+    return "USD";
+  }
+
+  return "EUR";
+}
+
+function formatMoney(amount, currency = "EUR") {
+  return currency === "USD" ? usd.format(amount) : euro.format(amount);
+}
+
+function convertPositionAmountToEuro(position, amount) {
+  return getPositionCurrency(position) === "USD" ? amount * fallbackUsdToEurRate : amount;
+}
+
 function getPortfolioRows() {
   return portfolios.flatMap((portfolio) => {
     return portfolio.positions.map((position) => ({
@@ -97,8 +133,8 @@ function calculateWealth() {
       const quantity = Number(position.quantity);
       const purchasePrice = Number(position.purchase_price);
       const currentPrice = Number(position.current_price ?? position.purchase_price);
-      const invested = quantity * purchasePrice;
-      const market = quantity * currentPrice;
+      const invested = convertPositionAmountToEuro(position, quantity * purchasePrice);
+      const market = convertPositionAmountToEuro(position, quantity * currentPrice);
 
       totals.invested += invested;
       totals.market += market;
@@ -192,15 +228,16 @@ function renderPortfolios() {
           const quantity = Number(position.quantity);
           const purchasePrice = Number(position.purchase_price);
           const currentPrice = Number(position.current_price ?? position.purchase_price);
-          const invested = quantity * purchasePrice;
-          const market = quantity * currentPrice;
+          const currency = getPositionCurrency(position);
+          const invested = convertPositionAmountToEuro(position, quantity * purchasePrice);
+          const market = convertPositionAmountToEuro(position, quantity * currentPrice);
           const gain = market - invested;
 
           return `
             <div class="position-row">
               <div class="position-main">
                 <strong>${escapeHTML(position.symbol)}</strong>
-                <p>${escapeHTML(position.name || position.symbol)} · ${escapeHTML(position.purchase_date)}</p>
+                <p>${escapeHTML(position.name || position.symbol)} &middot; ${escapeHTML(position.purchase_date)}</p>
               </div>
               <div class="position-grid">
                 <div>
@@ -209,11 +246,11 @@ function renderPortfolios() {
                 </div>
                 <div>
                   <span class="position-label">Carico</span>
-                  <span class="position-value">${euro.format(purchasePrice)}</span>
+                  <span class="position-value">${formatMoney(purchasePrice, currency)}</span>
                 </div>
                 <div>
                   <span class="position-label">Prezzo oggi</span>
-                  <span class="position-value">${euro.format(currentPrice)}</span>
+                  <span class="position-value">${formatMoney(currentPrice, currency)}</span>
                 </div>
                 <div>
                   <span class="position-label">Valore</span>
@@ -230,7 +267,8 @@ function renderPortfolios() {
         .join("");
 
       const portfolioMarket = portfolio.positions.reduce((total, position) => {
-        return total + Number(position.quantity) * Number(position.current_price ?? position.purchase_price);
+        const market = Number(position.quantity) * Number(position.current_price ?? position.purchase_price);
+        return total + convertPositionAmountToEuro(position, market);
       }, 0);
 
       return `
@@ -461,6 +499,57 @@ async function getOrCreatePortfolio(name) {
   return portfolio;
 }
 
+function hasImportedPosition(portfolio, position) {
+  return portfolio.positions.some((existing) => {
+    return existing.symbol === position.symbol
+      && Number(existing.quantity) === Number(position.quantity)
+      && existing.purchase_date === position.purchase_date;
+  });
+}
+
+async function importImagePortfolio() {
+  if (supabase && !currentUser) {
+    authMessage.textContent = "Accedi prima di caricare la lista nel database.";
+    return;
+  }
+
+  const portfolio = await getOrCreatePortfolio(importedPortfolioName);
+  const missingPositions = importedPositions.filter((position) => {
+    return !hasImportedPosition(portfolio, position);
+  });
+
+  if (missingPositions.length === 0) {
+    authMessage.textContent = "La lista risulta gia caricata nel portafoglio principale.";
+    return;
+  }
+
+  if (supabase && currentUser) {
+    const rows = missingPositions.map((position) => ({
+      ...position,
+      portfolio_id: portfolio.id
+    }));
+    const { error } = await supabase.from("portfolio_positions").insert(rows);
+
+    if (error) {
+      authMessage.textContent = `Errore caricamento lista: ${error.message}`;
+      return;
+    }
+
+    authMessage.textContent = `Caricati ${missingPositions.length} titoli nel portafoglio principale.`;
+    await loadPortfolios();
+    return;
+  }
+
+  portfolio.positions.push(
+    ...missingPositions.map((position) => ({
+      ...position,
+      id: crypto.randomUUID()
+    }))
+  );
+  authMessage.textContent = `Caricati ${missingPositions.length} titoli in modalita demo.`;
+  renderAll();
+}
+
 document.querySelector("#addTransactionButton").addEventListener("click", () => {
   transactionDialog.showModal();
 });
@@ -471,6 +560,10 @@ document.querySelector("#addPositionButton").addEventListener("click", () => {
 
 document.querySelector("#refreshPricesButton").addEventListener("click", async () => {
   await refreshPortfolioPrices();
+});
+
+document.querySelector("#importWatchlistButton").addEventListener("click", async () => {
+  await importImagePortfolio();
 });
 
 authForm.addEventListener("submit", async (event) => {

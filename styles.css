@@ -119,7 +119,8 @@ button {
 .goal-item,
 .transaction-row,
 .position-row,
-.wealth-totals {
+.wealth-totals,
+.panel-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -564,7 +565,8 @@ h2 {
   }
 
   .position-row,
-  .wealth-totals {
+  .wealth-totals,
+  .panel-actions {
     align-items: stretch;
     flex-direction: column;
   }

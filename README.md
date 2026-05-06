@@ -38,8 +38,10 @@ La sezione Patrimonio permette di:
 
 - creare un portafoglio mentre inserisci il primo titolo
 - inserire simbolo, data acquisto, quantita e prezzo di carico
+- caricare la lista iniziale mostrata nello screenshot con il pulsante `Carica lista`
 - cercare il prezzo giornaliero tramite servizio pubblico Stooq
 - calcolare investito, valore attuale e risultato
+- convertire in euro i titoli USA con un cambio indicativo USD/EUR
 
 Esempi simboli:
 
