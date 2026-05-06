@@ -56,6 +56,7 @@ const supabase = hasSupabaseConfig
 let transactions = [...fallbackTransactions];
 let portfolios = [...fallbackPortfolios];
 let currentUser = null;
+let noticeMessage = "";
 
 const euro = new Intl.NumberFormat("it-IT", {
   style: "currency",
@@ -85,6 +86,11 @@ const signupButton = document.querySelector("#signupButton");
 const logoutButton = document.querySelector("#logoutButton");
 const authTitle = document.querySelector("#authTitle");
 const authMessage = document.querySelector("#authMessage");
+
+function setNotice(message) {
+  noticeMessage = message;
+  authMessage.textContent = message;
+}
 
 function escapeHTML(value) {
   return String(value).replace(/[&<>"']/g, (character) => {
@@ -290,7 +296,7 @@ function renderPortfolios() {
 function renderAuthState() {
   if (!hasSupabaseConfig) {
     authTitle.textContent = "Collega Supabase";
-    authMessage.textContent = "Crea config.js con URL e anon key Supabase. Intanto vedi dati demo locali.";
+    authMessage.textContent = noticeMessage || "Crea config.js con URL e anon key Supabase. Intanto vedi dati demo locali.";
     authForm.classList.add("hidden");
     logoutButton.classList.add("hidden");
     return;
@@ -298,14 +304,14 @@ function renderAuthState() {
 
   if (currentUser) {
     authTitle.textContent = "Database collegato";
-    authMessage.textContent = `Accesso effettuato come ${currentUser.email}. Movimenti e patrimonio sono sincronizzati con Supabase.`;
+    authMessage.textContent = noticeMessage || `Accesso effettuato come ${currentUser.email}. Movimenti e patrimonio sono sincronizzati con Supabase.`;
     authForm.classList.add("hidden");
     logoutButton.classList.remove("hidden");
     return;
   }
 
   authTitle.textContent = "Accedi";
-  authMessage.textContent = "Accedi o crea un account per salvare movimenti e patrimonio nel database Supabase.";
+  authMessage.textContent = noticeMessage || "Accedi o crea un account per salvare movimenti e patrimonio nel database Supabase.";
   authForm.classList.remove("hidden");
   logoutButton.classList.add("hidden");
 }
@@ -381,7 +387,7 @@ async function loadTransactions() {
     .order("created_at", { ascending: false });
 
   if (error) {
-    authMessage.textContent = `Errore lettura Supabase: ${error.message}`;
+    setNotice(`Errore lettura Supabase: ${error.message}`);
     return;
   }
 
@@ -415,7 +421,7 @@ async function loadPortfolios() {
     .order("created_at", { ascending: true });
 
   if (error) {
-    authMessage.textContent = `Errore lettura patrimonio: ${error.message}`;
+    setNotice(`Errore lettura patrimonio: ${error.message}. Se hai appena aggiornato l'app, esegui supabase-schema.sql in Supabase SQL Editor.`);
     portfolios = [];
     renderAll();
     return;
@@ -441,10 +447,11 @@ async function refreshSession() {
 }
 
 async function signIn(email, password) {
+  noticeMessage = "";
   const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
   if (error) {
-    authMessage.textContent = `Accesso non riuscito: ${error.message}`;
+    setNotice(`Accesso non riuscito: ${error.message}`);
     return;
   }
 
@@ -453,17 +460,18 @@ async function signIn(email, password) {
 }
 
 async function signUp(email, password) {
+  noticeMessage = "";
   const { data, error } = await supabase.auth.signUp({ email, password });
 
   if (error) {
-    authMessage.textContent = `Registrazione non riuscita: ${error.message}`;
+    setNotice(`Registrazione non riuscita: ${error.message}`);
     return;
   }
 
   currentUser = data.session?.user ?? null;
-  authMessage.textContent = currentUser
+  setNotice(currentUser
     ? "Account creato e accesso effettuato."
-    : "Account creato. Se Supabase richiede conferma email, controlla la posta.";
+    : "Account creato. Se Supabase richiede conferma email, controlla la posta.");
   await Promise.all([loadTransactions(), loadPortfolios()]);
 }
 
@@ -509,17 +517,18 @@ function hasImportedPosition(portfolio, position) {
 
 async function importImagePortfolio() {
   if (supabase && !currentUser) {
-    authMessage.textContent = "Accedi prima di caricare la lista nel database.";
+    setNotice("Accedi prima di caricare la lista nel database.");
     return;
   }
 
+  setNotice("Caricamento lista in corso...");
   const portfolio = await getOrCreatePortfolio(importedPortfolioName);
   const missingPositions = importedPositions.filter((position) => {
     return !hasImportedPosition(portfolio, position);
   });
 
   if (missingPositions.length === 0) {
-    authMessage.textContent = "La lista risulta gia caricata nel portafoglio principale.";
+    setNotice("La lista risulta gia caricata nel portafoglio principale.");
     return;
   }
 
@@ -531,12 +540,18 @@ async function importImagePortfolio() {
     const { error } = await supabase.from("portfolio_positions").insert(rows);
 
     if (error) {
-      authMessage.textContent = `Errore caricamento lista: ${error.message}`;
+      setNotice(`Errore caricamento lista: ${error.message}. Controlla di aver eseguito supabase-schema.sql aggiornato.`);
       return;
     }
 
-    authMessage.textContent = `Caricati ${missingPositions.length} titoli nel portafoglio principale.`;
-    await loadPortfolios();
+    portfolio.positions.push(
+      ...missingPositions.map((position) => ({
+        ...position,
+        id: crypto.randomUUID()
+      }))
+    );
+    setNotice(`Caricati ${missingPositions.length} titoli nel portafoglio principale.`);
+    renderAll();
     return;
   }
 
@@ -546,7 +561,7 @@ async function importImagePortfolio() {
       id: crypto.randomUUID()
     }))
   );
-  authMessage.textContent = `Caricati ${missingPositions.length} titoli in modalita demo.`;
+  setNotice(`Caricati ${missingPositions.length} titoli in modalita demo.`);
   renderAll();
 }
 
@@ -578,6 +593,7 @@ signupButton.addEventListener("click", async () => {
 });
 
 logoutButton.addEventListener("click", async () => {
+  noticeMessage = "";
   await supabase.auth.signOut();
   currentUser = null;
   await Promise.all([loadTransactions(), loadPortfolios()]);
@@ -607,7 +623,7 @@ transactionForm.addEventListener("submit", async (event) => {
     const { error } = await supabase.from("transactions").insert(transaction);
 
     if (error) {
-      authMessage.textContent = `Errore salvataggio: ${error.message}`;
+      setNotice(`Errore salvataggio: ${error.message}`);
       return;
     }
 
@@ -632,7 +648,7 @@ positionForm.addEventListener("submit", async (event) => {
   const purchasePrice = parseAmount(data.get("purchasePrice"));
 
   if (Number.isNaN(quantity) || Number.isNaN(purchasePrice)) {
-    authMessage.textContent = "Quantita e prezzo di carico devono essere numeri validi.";
+    setNotice("Quantita e prezzo di carico devono essere numeri validi.");
     return;
   }
 
@@ -652,7 +668,7 @@ positionForm.addEventListener("submit", async (event) => {
       const { error } = await supabase.from("portfolio_positions").insert(pricedPosition);
 
       if (error) {
-        authMessage.textContent = `Errore salvataggio titolo: ${error.message}`;
+        setNotice(`Errore salvataggio titolo: ${error.message}`);
         return;
       }
 
@@ -668,7 +684,7 @@ positionForm.addEventListener("submit", async (event) => {
     positionForm.reset();
     positionDialog.close();
   } catch (error) {
-    authMessage.textContent = `Errore patrimonio: ${error.message}`;
+    setNotice(`Errore patrimonio: ${error.message}`);
   }
 });
 
