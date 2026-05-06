@@ -23,6 +23,7 @@
           <a class="nav-item active" href="#dashboard">Dashboard</a>
           <a class="nav-item" href="#movimenti">Movimenti</a>
           <a class="nav-item" href="#budget">Budget</a>
+          <a class="nav-item" href="#patrimonio">Patrimonio</a>
           <a class="nav-item" href="#obiettivi">Obiettivi</a>
         </nav>
       </aside>
@@ -35,6 +36,9 @@
           </div>
           <button class="primary-action" id="addTransactionButton" type="button">
             + Movimento
+          </button>
+          <button class="primary-action" id="addPositionButton" type="button">
+            + Titolo
           </button>
         </header>
 
@@ -76,6 +80,11 @@
             <strong id="savingRate">0%</strong>
             <span class="trend positive">Obiettivo 25%</span>
           </article>
+          <article class="summary-card">
+            <p class="card-label">Patrimonio investito</p>
+            <strong id="wealthTotal">&euro; 0,00</strong>
+            <span class="trend" id="wealthTrend">Prezzi giornalieri</span>
+          </article>
         </section>
 
         <section class="content-grid">
@@ -99,6 +108,31 @@
             </div>
             <div class="budget-list" id="budgetList"></div>
           </article>
+        </section>
+
+        <section class="panel wealth-panel" id="patrimonio">
+          <div class="panel-header">
+            <div>
+              <p class="eyebrow">Portafogli</p>
+              <h2>Patrimonio e titoli</h2>
+            </div>
+            <button class="ghost-button" id="refreshPricesButton" type="button">Aggiorna prezzi</button>
+          </div>
+          <div class="wealth-totals" aria-label="Riepilogo patrimonio">
+            <div>
+              <span>Investito</span>
+              <strong id="investedTotal">&euro; 0,00</strong>
+            </div>
+            <div>
+              <span>Valore attuale</span>
+              <strong id="marketTotal">&euro; 0,00</strong>
+            </div>
+            <div>
+              <span>Risultato</span>
+              <strong id="gainTotal">&euro; 0,00</strong>
+            </div>
+          </div>
+          <div class="portfolio-list" id="portfolioList"></div>
         </section>
 
         <section class="bottom-grid">
@@ -178,6 +212,47 @@
         <div class="form-actions">
           <button class="ghost-button" value="cancel" type="submit">Annulla</button>
           <button class="primary-action" value="default" type="submit">Aggiungi</button>
+        </div>
+      </form>
+    </dialog>
+
+    <dialog class="transaction-dialog" id="positionDialog">
+      <form method="dialog" class="transaction-form" id="positionForm">
+        <div class="panel-header">
+          <div>
+            <p class="eyebrow">Nuovo</p>
+            <h2>Titolo in portafoglio</h2>
+          </div>
+          <button class="icon-button" value="cancel" aria-label="Chiudi">&times;</button>
+        </div>
+
+        <label>
+          Portafoglio
+          <input name="portfolio" placeholder="Es. Investimenti lungo termine" required>
+        </label>
+        <label>
+          Simbolo
+          <input name="symbol" placeholder="Es. AAPL.US, MSFT.US, ENEL.IT" required>
+        </label>
+        <label>
+          Nome titolo
+          <input name="name" placeholder="Es. Apple">
+        </label>
+        <label>
+          Data acquisto
+          <input name="purchaseDate" type="date" required>
+        </label>
+        <label>
+          Quantit&agrave;
+          <input name="quantity" inputmode="decimal" placeholder="10" required>
+        </label>
+        <label>
+          Prezzo di carico
+          <input name="purchasePrice" inputmode="decimal" placeholder="185.50" required>
+        </label>
+        <div class="form-actions">
+          <button class="ghost-button" value="cancel" type="submit">Annulla</button>
+          <button class="primary-action" value="default" type="submit">Inserisci</button>
         </div>
       </form>
     </dialog>

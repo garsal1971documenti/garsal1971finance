@@ -117,7 +117,9 @@ button {
 .panel-header,
 .form-actions,
 .goal-item,
-.transaction-row {
+.transaction-row,
+.position-row,
+.wealth-totals {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -184,7 +186,7 @@ h2 {
 
 .summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 16px;
   margin-bottom: 18px;
 }
@@ -294,7 +296,8 @@ h2 {
 
 .transaction-list,
 .budget-list,
-.goal-list {
+.goal-list,
+.portfolio-list {
   display: grid;
   gap: 12px;
   margin-top: 18px;
@@ -304,6 +307,91 @@ h2 {
   padding: 14px;
   border: 1px solid var(--line);
   border-radius: 8px;
+}
+
+.wealth-panel {
+  margin-top: 18px;
+}
+
+.wealth-totals {
+  align-items: stretch;
+  margin-top: 18px;
+}
+
+.wealth-totals div {
+  flex: 1 1 0;
+  padding: 14px;
+  border-radius: 8px;
+  background: var(--surface-muted);
+}
+
+.wealth-totals span,
+.position-label,
+.price-note {
+  display: block;
+  color: var(--muted);
+  font-size: 0.83rem;
+}
+
+.wealth-totals strong {
+  display: block;
+  margin-top: 6px;
+  font-size: 1.25rem;
+}
+
+.portfolio-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.portfolio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px;
+  background: var(--surface-muted);
+}
+
+.portfolio-header h3,
+.portfolio-header p,
+.position-main p {
+  margin: 0;
+}
+
+.portfolio-header h3 {
+  font-size: 1rem;
+}
+
+.portfolio-header p,
+.position-main p {
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.position-row {
+  padding: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.position-main {
+  min-width: 160px;
+}
+
+.position-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(90px, 1fr));
+  gap: 12px;
+  width: 100%;
+}
+
+.position-value {
+  font-weight: 800;
+}
+
+.price-note {
+  margin-top: 12px;
 }
 
 .transaction-meta {
@@ -474,6 +562,16 @@ h2 {
   .content-grid {
     grid-template-columns: 1fr;
   }
+
+  .position-row,
+  .wealth-totals {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .position-grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 640px) {
@@ -491,6 +589,10 @@ h2 {
     grid-template-columns: 1fr;
   }
 
+  .summary-grid {
+    grid-template-columns: 1fr;
+  }
+
   .summary-card {
     min-height: 124px;
   }
@@ -502,5 +604,9 @@ h2 {
 
   .transaction-amount {
     align-self: flex-end;
+  }
+
+  .position-grid {
+    grid-template-columns: 1fr;
   }
 }

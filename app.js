@@ -8,6 +8,25 @@ const fallbackTransactions = [
   { description: "Carburante", category: "Trasporti", amount: -58, type: "expense" }
 ];
 
+const fallbackPortfolios = [
+  {
+    id: "demo",
+    name: "Demo investimenti",
+    positions: [
+      {
+        id: "demo-aapl",
+        symbol: "AAPL.US",
+        name: "Apple",
+        purchase_date: "2026-04-15",
+        quantity: 5,
+        purchase_price: 185.5,
+        current_price: 185.5,
+        price_date: "demo"
+      }
+    ]
+  }
+];
+
 const budgets = [
   { category: "Casa", used: 720, limit: 850 },
   { category: "Spesa", used: 286, limit: 420 },
@@ -22,6 +41,7 @@ const supabase = hasSupabaseConfig
   : null;
 
 let transactions = [...fallbackTransactions];
+let portfolios = [...fallbackPortfolios];
 let currentUser = null;
 
 const euro = new Intl.NumberFormat("it-IT", {
@@ -29,10 +49,17 @@ const euro = new Intl.NumberFormat("it-IT", {
   currency: "EUR"
 });
 
+const numberFormatter = new Intl.NumberFormat("it-IT", {
+  maximumFractionDigits: 4
+});
+
 const transactionList = document.querySelector("#transactionList");
 const budgetList = document.querySelector("#budgetList");
-const dialog = document.querySelector("#transactionDialog");
-const form = document.querySelector("#transactionForm");
+const portfolioList = document.querySelector("#portfolioList");
+const transactionDialog = document.querySelector("#transactionDialog");
+const positionDialog = document.querySelector("#positionDialog");
+const transactionForm = document.querySelector("#transactionForm");
+const positionForm = document.querySelector("#positionForm");
 const authForm = document.querySelector("#authForm");
 const signupButton = document.querySelector("#signupButton");
 const logoutButton = document.querySelector("#logoutButton");
@@ -51,6 +78,37 @@ function escapeHTML(value) {
   });
 }
 
+function parseAmount(value) {
+  return Number.parseFloat(String(value).replace(",", "."));
+}
+
+function getPortfolioRows() {
+  return portfolios.flatMap((portfolio) => {
+    return portfolio.positions.map((position) => ({
+      ...position,
+      portfolioName: portfolio.name
+    }));
+  });
+}
+
+function calculateWealth() {
+  return getPortfolioRows().reduce(
+    (totals, position) => {
+      const quantity = Number(position.quantity);
+      const purchasePrice = Number(position.purchase_price);
+      const currentPrice = Number(position.current_price ?? position.purchase_price);
+      const invested = quantity * purchasePrice;
+      const market = quantity * currentPrice;
+
+      totals.invested += invested;
+      totals.market += market;
+      totals.gain += market - invested;
+      return totals;
+    },
+    { invested: 0, market: 0, gain: 0 }
+  );
+}
+
 function renderTotals() {
   const income = transactions
     .filter((transaction) => transaction.amount > 0)
@@ -60,11 +118,19 @@ function renderTotals() {
     .reduce((total, transaction) => total + Math.abs(Number(transaction.amount)), 0);
   const balance = income - expenses;
   const savingRate = income === 0 ? 0 : Math.round((balance / income) * 100);
+  const wealth = calculateWealth();
 
   document.querySelector("#currentBalance").textContent = euro.format(balance);
   document.querySelector("#incomeTotal").textContent = euro.format(income);
   document.querySelector("#expenseTotal").textContent = euro.format(expenses);
   document.querySelector("#savingRate").textContent = `${savingRate}%`;
+  document.querySelector("#wealthTotal").textContent = euro.format(wealth.market);
+  document.querySelector("#wealthTrend").textContent = `${wealth.gain >= 0 ? "+" : ""}${euro.format(wealth.gain)}`;
+  document.querySelector("#wealthTrend").className = `trend ${wealth.gain >= 0 ? "positive" : "warning"}`;
+  document.querySelector("#investedTotal").textContent = euro.format(wealth.invested);
+  document.querySelector("#marketTotal").textContent = euro.format(wealth.market);
+  document.querySelector("#gainTotal").textContent = euro.format(wealth.gain);
+  document.querySelector("#gainTotal").className = wealth.gain >= 0 ? "positive" : "warning";
 }
 
 function renderTransactions() {
@@ -111,6 +177,78 @@ function renderBudgets() {
     .join("");
 }
 
+function renderPortfolios() {
+  if (portfolios.length === 0) {
+    portfolioList.innerHTML = `
+      <p class="price-note">Nessun titolo inserito. Usa + Titolo per creare un portafoglio e aggiungere il primo carico.</p>
+    `;
+    return;
+  }
+
+  portfolioList.innerHTML = portfolios
+    .map((portfolio) => {
+      const positionsHTML = portfolio.positions
+        .map((position) => {
+          const quantity = Number(position.quantity);
+          const purchasePrice = Number(position.purchase_price);
+          const currentPrice = Number(position.current_price ?? position.purchase_price);
+          const invested = quantity * purchasePrice;
+          const market = quantity * currentPrice;
+          const gain = market - invested;
+
+          return `
+            <div class="position-row">
+              <div class="position-main">
+                <strong>${escapeHTML(position.symbol)}</strong>
+                <p>${escapeHTML(position.name || position.symbol)} · ${escapeHTML(position.purchase_date)}</p>
+              </div>
+              <div class="position-grid">
+                <div>
+                  <span class="position-label">Quantit&agrave;</span>
+                  <span class="position-value">${numberFormatter.format(quantity)}</span>
+                </div>
+                <div>
+                  <span class="position-label">Carico</span>
+                  <span class="position-value">${euro.format(purchasePrice)}</span>
+                </div>
+                <div>
+                  <span class="position-label">Prezzo oggi</span>
+                  <span class="position-value">${euro.format(currentPrice)}</span>
+                </div>
+                <div>
+                  <span class="position-label">Valore</span>
+                  <span class="position-value">${euro.format(market)}</span>
+                </div>
+                <div>
+                  <span class="position-label">Risultato</span>
+                  <span class="position-value ${gain >= 0 ? "positive" : "warning"}">${euro.format(gain)}</span>
+                </div>
+              </div>
+            </div>
+          `;
+        })
+        .join("");
+
+      const portfolioMarket = portfolio.positions.reduce((total, position) => {
+        return total + Number(position.quantity) * Number(position.current_price ?? position.purchase_price);
+      }, 0);
+
+      return `
+        <article class="portfolio-card">
+          <div class="portfolio-header">
+            <div>
+              <h3>${escapeHTML(portfolio.name)}</h3>
+              <p>${portfolio.positions.length} titoli o carichi</p>
+            </div>
+            <strong>${euro.format(portfolioMarket)}</strong>
+          </div>
+          ${positionsHTML}
+        </article>
+      `;
+    })
+    .join("");
+}
+
 function renderAuthState() {
   if (!hasSupabaseConfig) {
     authTitle.textContent = "Collega Supabase";
@@ -122,14 +260,14 @@ function renderAuthState() {
 
   if (currentUser) {
     authTitle.textContent = "Database collegato";
-    authMessage.textContent = `Accesso effettuato come ${currentUser.email}. I movimenti sono sincronizzati con Supabase.`;
+    authMessage.textContent = `Accesso effettuato come ${currentUser.email}. Movimenti e patrimonio sono sincronizzati con Supabase.`;
     authForm.classList.add("hidden");
     logoutButton.classList.remove("hidden");
     return;
   }
 
   authTitle.textContent = "Accedi";
-  authMessage.textContent = "Accedi o crea un account per salvare i movimenti nel database Supabase.";
+  authMessage.textContent = "Accedi o crea un account per salvare movimenti e patrimonio nel database Supabase.";
   authForm.classList.remove("hidden");
   logoutButton.classList.add("hidden");
 }
@@ -138,7 +276,58 @@ function renderAll() {
   renderTotals();
   renderTransactions();
   renderBudgets();
+  renderPortfolios();
   renderAuthState();
+}
+
+async function fetchDailyPrice(symbol) {
+  const normalizedSymbol = symbol.trim().toLowerCase();
+  const url = `https://stooq.com/q/l/?s=${encodeURIComponent(normalizedSymbol)}&f=sd2t2c&h&e=csv`;
+  const response = await fetch(url);
+
+  if (!response.ok) {
+    throw new Error("Servizio prezzi non disponibile");
+  }
+
+  const csv = await response.text();
+  const [headerLine, dataLine] = csv.trim().split(/\r?\n/);
+  const headers = headerLine.split(",");
+  const values = dataLine.split(",");
+  const row = Object.fromEntries(headers.map((header, index) => [header, values[index]]));
+  const close = Number(row.Close);
+
+  if (!Number.isFinite(close) || close <= 0) {
+    throw new Error(`Prezzo non trovato per ${symbol}`);
+  }
+
+  return {
+    current_price: close,
+    price_date: row.Date || new Date().toISOString().slice(0, 10)
+  };
+}
+
+async function enrichPositionPrice(position) {
+  try {
+    const price = await fetchDailyPrice(position.symbol);
+    return { ...position, ...price };
+  } catch {
+    return {
+      ...position,
+      current_price: Number(position.current_price ?? position.purchase_price),
+      price_date: position.price_date ?? "prezzo di carico"
+    };
+  }
+}
+
+async function refreshPortfolioPrices() {
+  portfolios = await Promise.all(
+    portfolios.map(async (portfolio) => ({
+      ...portfolio,
+      positions: await Promise.all(portfolio.positions.map(enrichPositionPrice))
+    }))
+  );
+
+  renderAll();
 }
 
 async function loadTransactions() {
@@ -162,6 +351,46 @@ async function loadTransactions() {
   renderAll();
 }
 
+async function loadPortfolios() {
+  if (!supabase || !currentUser) {
+    portfolios = [...fallbackPortfolios];
+    await refreshPortfolioPrices();
+    return;
+  }
+
+  const { data, error } = await supabase
+    .from("portfolios")
+    .select(`
+      id,
+      name,
+      portfolio_positions (
+        id,
+        symbol,
+        name,
+        purchase_date,
+        quantity,
+        purchase_price,
+        current_price,
+        price_date
+      )
+    `)
+    .order("created_at", { ascending: true });
+
+  if (error) {
+    authMessage.textContent = `Errore lettura patrimonio: ${error.message}`;
+    portfolios = [];
+    renderAll();
+    return;
+  }
+
+  portfolios = data.map((portfolio) => ({
+    id: portfolio.id,
+    name: portfolio.name,
+    positions: portfolio.portfolio_positions ?? []
+  }));
+  await refreshPortfolioPrices();
+}
+
 async function refreshSession() {
   if (!supabase) {
     renderAll();
@@ -170,7 +399,7 @@ async function refreshSession() {
 
   const { data } = await supabase.auth.getSession();
   currentUser = data.session?.user ?? null;
-  await loadTransactions();
+  await Promise.all([loadTransactions(), loadPortfolios()]);
 }
 
 async function signIn(email, password) {
@@ -182,7 +411,7 @@ async function signIn(email, password) {
   }
 
   currentUser = data.user;
-  await loadTransactions();
+  await Promise.all([loadTransactions(), loadPortfolios()]);
 }
 
 async function signUp(email, password) {
@@ -197,11 +426,51 @@ async function signUp(email, password) {
   authMessage.textContent = currentUser
     ? "Account creato e accesso effettuato."
     : "Account creato. Se Supabase richiede conferma email, controlla la posta.";
-  await loadTransactions();
+  await Promise.all([loadTransactions(), loadPortfolios()]);
+}
+
+async function getOrCreatePortfolio(name) {
+  const existing = portfolios.find((portfolio) => portfolio.name.toLowerCase() === name.toLowerCase());
+
+  if (existing) {
+    return existing;
+  }
+
+  if (!supabase || !currentUser) {
+    const portfolio = {
+      id: crypto.randomUUID(),
+      name,
+      positions: []
+    };
+    portfolios.push(portfolio);
+    return portfolio;
+  }
+
+  const { data, error } = await supabase
+    .from("portfolios")
+    .insert({ name })
+    .select("id, name")
+    .single();
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  const portfolio = { ...data, positions: [] };
+  portfolios.push(portfolio);
+  return portfolio;
 }
 
 document.querySelector("#addTransactionButton").addEventListener("click", () => {
-  dialog.showModal();
+  transactionDialog.showModal();
+});
+
+document.querySelector("#addPositionButton").addEventListener("click", () => {
+  positionDialog.showModal();
+});
+
+document.querySelector("#refreshPricesButton").addEventListener("click", async () => {
+  await refreshPortfolioPrices();
 });
 
 authForm.addEventListener("submit", async (event) => {
@@ -218,17 +487,17 @@ signupButton.addEventListener("click", async () => {
 logoutButton.addEventListener("click", async () => {
   await supabase.auth.signOut();
   currentUser = null;
-  await loadTransactions();
+  await Promise.all([loadTransactions(), loadPortfolios()]);
 });
 
-form.addEventListener("submit", async (event) => {
+transactionForm.addEventListener("submit", async (event) => {
   if (event.submitter?.value === "cancel") {
     return;
   }
 
   event.preventDefault();
-  const data = new FormData(form);
-  const amount = Number.parseFloat(String(data.get("amount")).replace(",", "."));
+  const data = new FormData(transactionForm);
+  const amount = parseAmount(data.get("amount"));
 
   if (Number.isNaN(amount)) {
     return;
@@ -255,8 +524,59 @@ form.addEventListener("submit", async (event) => {
     renderAll();
   }
 
-  form.reset();
-  dialog.close();
+  transactionForm.reset();
+  transactionDialog.close();
+});
+
+positionForm.addEventListener("submit", async (event) => {
+  if (event.submitter?.value === "cancel") {
+    return;
+  }
+
+  event.preventDefault();
+  const data = new FormData(positionForm);
+  const quantity = parseAmount(data.get("quantity"));
+  const purchasePrice = parseAmount(data.get("purchasePrice"));
+
+  if (Number.isNaN(quantity) || Number.isNaN(purchasePrice)) {
+    authMessage.textContent = "Quantita e prezzo di carico devono essere numeri validi.";
+    return;
+  }
+
+  try {
+    const portfolio = await getOrCreatePortfolio(String(data.get("portfolio")).trim());
+    const basePosition = {
+      portfolio_id: portfolio.id,
+      symbol: String(data.get("symbol")).trim().toUpperCase(),
+      name: String(data.get("name") || data.get("symbol")).trim(),
+      purchase_date: String(data.get("purchaseDate")),
+      quantity,
+      purchase_price: purchasePrice
+    };
+    const pricedPosition = await enrichPositionPrice(basePosition);
+
+    if (supabase && currentUser) {
+      const { error } = await supabase.from("portfolio_positions").insert(pricedPosition);
+
+      if (error) {
+        authMessage.textContent = `Errore salvataggio titolo: ${error.message}`;
+        return;
+      }
+
+      await loadPortfolios();
+    } else {
+      portfolio.positions.unshift({
+        ...pricedPosition,
+        id: crypto.randomUUID()
+      });
+      renderAll();
+    }
+
+    positionForm.reset();
+    positionDialog.close();
+  } catch (error) {
+    authMessage.textContent = `Errore patrimonio: ${error.message}`;
+  }
 });
 
 await refreshSession();
